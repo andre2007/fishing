@@ -1,0 +1,16 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/fishing
+fishing.so
+fishing.dylib
+fishing.dll
+fishing.a
+fishing.lib
+fishing-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst
