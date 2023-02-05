@@ -329,7 +329,27 @@ class FishingWindow : MainWindow
 	{
 		if (_species != "" && _section != "")
 		{
-			_fishDatabase.setSpeciesSectionValues(_section, _species, SpeciesValues(_editPieces.content.to!int, Fixed!(2)(_editWeight.content)));
+			try
+            {
+                int i = _editPieces.content.to!int;
+            }
+            catch(Exception e)
+            {
+                messageBox("Error", "Stück ist keine gültige Zahl");
+                _editPieces.content = "0";
+            }
+            
+            try
+            {
+                auto f = Fixed!(2)(_editWeight.content);
+            }
+            catch(Exception e)
+            {
+                messageBox("Error", "Gewicht ist keine gültige Zahl");
+                _editWeight.content = "0.00";
+            }
+            
+            _fishDatabase.setSpeciesSectionValues(_section, _species, SpeciesValues(_editPieces.content.to!int, Fixed!(2)(_editWeight.content)));
 			refreshSumValues();
 		}
 	}
