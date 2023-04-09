@@ -4692,7 +4692,8 @@ class ListWidget : ListWidgetBase {
 
 		version(custom_widgets)
 			redraw();
-        version(win32_widgets)
+        // ADDED:
+	    version(win32_widgets)
             SendMessageW(hwnd, LB_SETCURSEL, y, 0);
 	}
 
@@ -4726,7 +4727,7 @@ class ListWidget : ListWidgetBase {
 		super(parent);
 		version(win32_widgets)
 			createWin32Window(this, WC_LISTBOX, "", 
-				0|WS_CHILD|WS_VISIBLE|LBS_NOTIFY, 0);
+				0|WS_CHILD|WS_VISIBLE|LBS_NOTIFY|WS_VSCROLL, 0);
 	}
 
 	version(win32_widgets)
