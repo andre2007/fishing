@@ -397,9 +397,24 @@ class FishDatabase
     {
         _filePath = filePath;
         if (_filePath.exists)
+        {
             _jsDatabase = parseJSON(readText(_filePath));
+            migrateDatabase();
+        }
         else
             initDatabase();
+    }
+
+    void migrateDatabase()
+    {
+        if (("species" in _jsDatabase) !is null)
+            return;
+
+        if (("sections" in _jsDatabase) !is null && ("1" in _jsDatabase["sections"]) !is null)
+        {
+            _jsDatabase["species"] = JSONValue(_jsDatabase["sections"].object["1"].object.keys);
+        }
+        saveDatabase();
     }
 
     void saveDatabase()
@@ -415,7 +430,7 @@ class FishDatabase
                 "3": JSONValue(string[string].init),
                 "4": JSONValue(string[string].init),
                 "5": JSONValue(string[string].init),
-                "6": JSONValue(string[string].init) ])]);
+                "6": JSONValue(string[string].init) ]), "species": JSONValue(string[].init)]);
         saveDatabase(); 
     }
     
@@ -433,12 +448,12 @@ class FishDatabase
 
     string[] getSpecies()
     {
-        return _jsDatabase["sections"].object["1"].object.keys.sort.array;
+        return _jsDatabase["species"].array.map!(js => js.str).array;
     }
 
     bool speciesExists(string species)
     {
-        return ((species.strip in _jsDatabase["sections"].object["1"].object) !is null);
+        return getSpecies().canFind(species.strip);
     }
 
     SpeciesValues getSpeciesValues(string section, string species)
@@ -468,12 +483,14 @@ class FishDatabase
     void addSpecies(string species)
     {
         foreach(n; 1..7) _jsDatabase["sections"].object[n.text].object[species.strip] = JSONValue(["pieces" : JSONValue("0"), "weight": JSONValue("0.00")]);
+        _jsDatabase["species"] = JSONValue(getSpecies() ~ species);
         saveDatabase(); 
     }
 
     void deleteSpecies(string species)
     {
         foreach(n; 1..7) _jsDatabase["sections"].object[n.text].object.remove(species.strip);
+        _jsDatabase["species"] = JSONValue(getSpecies().filter!(s => s != species.strip).array);
         saveDatabase(); 
     }
 
