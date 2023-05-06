@@ -137,7 +137,7 @@ class FishingWindow : MainWindow
             x = 40; y = 296; width = 73; height = 20;
         }
 
-        with (new TextLabel("Kilogramm", TextAlignment.Left, staticLayout))
+        with (new TextLabel("Gewicht kg", TextAlignment.Left, staticLayout))
         {
             x = 40; y = 320; width = 73; height = 20;
         }
@@ -170,11 +170,12 @@ class FishingWindow : MainWindow
         {
             x = 360; y = 288; width = 57; height = 25;
         }
-        _editPieces.addEventListener(delegate(BlurEvent ce) { 
-            this.onInput();
+        _editPieces.addEventListener(delegate(CharEvent  ce) {
+            if (ce.character == '\n')
+                this.onInput();
         });
 
-        with (new TextLabel("Kilogramm", TextAlignment.Left, staticLayout))
+        with (new TextLabel("Gewicht kg", TextAlignment.Left, staticLayout))
         {
             x = 272; y = 320; width = 80; height = 20;
         }
@@ -184,8 +185,9 @@ class FishingWindow : MainWindow
         {
             x = 360; y = 312; width = 57; height = 25;
         }
-        _editWeight.addEventListener(delegate(BlurEvent ce) { 
-            this.onInput();
+        _editWeight.addEventListener(delegate(CharEvent ce) {
+            if (ce.character == '\n')
+                this.onInput();
         });
 
         // Buttons
@@ -250,7 +252,7 @@ class FishingWindow : MainWindow
     {
         _section = section;
         if (_species != "")
-            showInputValues(_section, _species);
+            resetInputValues();
     }
 
     void onSpeciesSelected(string species)
@@ -258,16 +260,15 @@ class FishingWindow : MainWindow
         _species = species;
         if (_species != "")
         {
-            showInputValues(_section, _species);
+            resetInputValues();
             refreshSumValues();
         }   
     }
 
-    void showInputValues(string section, string species)
+    void resetInputValues()
     {
-        auto inputValues = _fishDatabase.getSpeciesValues(section, species);
-        _editPieces.content = inputValues.pieces.text;
-        _editWeight.content = inputValues.weight.toString;
+        _editPieces.content = "0";
+        _editWeight.content = "0.00";
     }
 
     void deleteFishSpecies()
@@ -344,7 +345,7 @@ class FishingWindow : MainWindow
             
             try
             {
-               auto f = Fixed!(2)(weight);
+                auto f = Fixed!(2)(weight);
             }
             catch(Exception e)
             {
@@ -352,8 +353,22 @@ class FishingWindow : MainWindow
                 weight = "0.00";
                 _editWeight.content = weight;
             }
-            
-            _fishDatabase.setSpeciesSectionValues(_section, _species, SpeciesValues(_editPieces.content.to!int, Fixed!(2)(weight)));
+
+            if (_editPieces.content.to!int == 0)
+            {
+                messageBox("Error", "Stück ist 0");
+                return;
+            }
+
+            if (Fixed!(2)(weight) == 0)
+            {
+                messageBox("Error", "Gewicht ist 0");
+                return;
+            }
+
+            _fishDatabase.addSpeciesSectionValues(_section, _species, SpeciesValues(_editPieces.content.to!int, Fixed!(2)(weight)));
+            _editPieces.content = "0";
+            _editWeight.content = "0.00";
             refreshSumValues();
         }
     }
@@ -474,9 +489,13 @@ class FishDatabase
         return result;
     }
 
-    void setSpeciesSectionValues(string section, string species, SpeciesValues speciesValues)
+    void addSpeciesSectionValues(string section, string species, SpeciesValues speciesValues)
     {
-        _jsDatabase["sections"].object[section].object[species.strip] = JSONValue(["pieces" : JSONValue(speciesValues.pieces.text), "weight": JSONValue(speciesValues.weight.toString)]);
+        SpeciesValues currentValue = getSpeciesValues(section, species);
+
+        _jsDatabase["sections"].object[section].object[species.strip] = JSONValue([
+            "pieces" : JSONValue((currentValue.pieces + speciesValues.pieces).text),
+            "weight": JSONValue((currentValue.weight + speciesValues.weight).toString)]);
         saveDatabase(); 
     }
 
