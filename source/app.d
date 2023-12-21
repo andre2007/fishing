@@ -547,7 +547,9 @@ class FishDatabase
 
         foreach(species; getSpecies())
         {
-            result ~= `<tr><td>` ~ species ~ `</td>`;
+            string speciesEncoded = species.replace("Ä", "&Auml;").replace("ä", "&auml;")
+                .replace("Ö", "&Ouml;").replace("ö", "&ouml;").replace("Ü", "&Uuml;").replace("ü", "&uuml;").replace("ß", "&szlig;");
+            result ~= `<tr><td>` ~ speciesEncoded ~ `</td>`;
             foreach(n; 1..7)
             {
                 auto speciesValues = getSpeciesValues(n.text, species);
@@ -562,4 +564,3 @@ class FishDatabase
         return result;
     }
 }
-
