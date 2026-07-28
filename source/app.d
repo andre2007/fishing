@@ -1,4 +1,5 @@
 import std;
+import core.sys.windows.windows;
 import arsd.minigui;
 import fixedpoint.fixed;
 
@@ -271,6 +272,89 @@ class FishingWindow : MainWindow
         _editWeight.content = "0.00";
     }
 
+    private class SpeciesInputDialog : Dialog
+    {
+        private LineEdit _editSpecies;
+        private void delegate(string) _onOk;
+        private Window _owner;
+
+        this(Window owner, void delegate(string) onOk)
+        {
+            super(scaleWithDpi(320), scaleWithDpi(140), "Neue Fischart");
+            if (this.win.impl.hwnd)
+            {
+                auto style = GetWindowLongPtrW(this.win.impl.hwnd, GWL_STYLE);
+                style &= ~WS_MINIMIZEBOX;
+                style &= ~WS_MAXIMIZEBOX;
+                SetWindowLongPtrW(this.win.impl.hwnd, GWL_STYLE, style);
+                SetWindowPos(this.win.impl.hwnd, null, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+            }
+            _owner = owner;
+            _onOk = onOk;
+
+            auto layout = new StaticLayout(this);
+
+            with (new TextLabel("Fischart eingeben", TextAlignment.Left, layout))
+            {
+                x = 16; y = 16; width = 140; height = 20;
+            }
+
+            _editSpecies = new LineEdit(layout);
+            with (_editSpecies)
+            {
+                x = 16; y = 44; width = 288; height = 24;
+            }
+            _editSpecies.addEventListener(delegate(CharEvent ce) {
+                if (ce.character == '\n')
+                    OK();
+            });
+
+            auto btnOk = new Button("OK", layout);
+            with (btnOk)
+            {
+                x = 180; y = 90; width = 60; height = 22;
+            }
+            btnOk.addWhenTriggered(&OK);
+
+            auto btnCancel = new Button("Abbrechen", layout);
+            with (btnCancel)
+            {
+                x = 248; y = 90; width = 80; height = 22;
+            }
+            btnCancel.addWhenTriggered(&Cancel);
+
+            this.addEventListener((KeyDownEvent ev) {
+                if (ev.key == Key.Enter || ev.key == Key.PadEnter)
+                {
+                    OK();
+                    ev.preventDefault();
+                }
+                if (ev.key == Key.Escape)
+                {
+                    Cancel();
+                    ev.preventDefault();
+                }
+            });
+
+            this.addEventListener((scope ClosedEvent ce) {
+                if (_owner !is null)
+                    setEnabled(_owner, true);
+            });
+        }
+
+        override void OK()
+        {
+            if (_onOk !is null)
+                _onOk(_editSpecies.content.strip);
+            close();
+        }
+
+        override void Cancel()
+        {
+            close();
+        }
+    }
+
     void deleteFishSpecies()
     {
         auto selectedIdx = _listBox.getSelection();
@@ -289,16 +373,10 @@ class FishingWindow : MainWindow
 
     void addFishSpecies()
     {
-        struct NeueFischart 
-        {
-            string FischartEingeben;
-        }
-
         setEnabled(this, false);
 
-        dialog((NeueFischart ns) {
-            string speciesName = ns.FischartEingeben.strip;
-            setEnabled(this, true);
+        auto dialog = new SpeciesInputDialog(this, (string speciesName) {
+            speciesName = speciesName.strip;
             if (speciesName == "")
             {
                 messageBox("Info", "Fischart ist leer");
@@ -312,9 +390,9 @@ class FishingWindow : MainWindow
                 _fishDatabase.addSpecies(speciesName);
                 _refreshListBox(speciesName);
             }
-        }, () {
-            setEnabled(this, true);
         });
+
+        dialog.show();
     }
 
     void deleteDatabase()
