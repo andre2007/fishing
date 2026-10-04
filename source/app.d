@@ -623,6 +623,10 @@ class FishDatabase
             <td>Gesamt kg</td>
             </tr>`;
 
+        SpeciesValues[] abschnittSums = [SpeciesValues(), SpeciesValues(), SpeciesValues(), SpeciesValues(), SpeciesValues(), SpeciesValues()];
+
+        
+
         foreach(species; getSpecies())
         {
             string speciesEncoded = species.replace("Ä", "&Auml;").replace("ä", "&auml;")
@@ -632,11 +636,29 @@ class FishDatabase
             {
                 auto speciesValues = getSpeciesValues(n.text, species);
                 result ~= `<td>` ~ speciesValues.pieces.text ~ `</td>` ~ `<td>` ~ speciesValues.weight.toString ~ `</td>`;
+                abschnittSums[n-1].pieces = abschnittSums[n-1].pieces + speciesValues.pieces;
+                abschnittSums[n-1].weight = abschnittSums[n-1].weight + speciesValues.weight;
             }
 
             auto speciesValuesSum = getSpeciesValuesSum(species);
             result ~= `<td>` ~ speciesValuesSum.pieces.text ~ `</td>` ~ `<td>` ~ speciesValuesSum.weight.toString ~ `</td>`;
         }
+
+        int totalPieces;
+        Fixed!2 totalWeight;
+
+        result ~= `<tr><td>Alle</td>`;
+
+        foreach(n; 0..6)
+        {
+            result ~= `<td>` ~ abschnittSums[n].pieces.text ~ `</td>`~
+            `<td>` ~ abschnittSums[n].weight.toString ~ `</td>`;
+            totalPieces += abschnittSums[n].pieces;
+            totalWeight += abschnittSums[n].weight;
+        }
+
+        result ~= `<td>` ~ totalPieces.text ~ `</td>`~
+            `<td>` ~ totalWeight.toString ~ `</td></tr>`;
 
         result ~= `</table></body></html>`;
         return result;
